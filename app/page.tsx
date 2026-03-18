@@ -90,7 +90,7 @@ export default function BookingPage() {
 
       {/* Hero header */}
       <header style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 40px', textAlign: 'center' }}>
+        <div className="booking-header" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 52, marginBottom: 16, filter: 'drop-shadow(0 0 20px rgba(196,148,58,0.3))' }}>
             💈
           </div>
@@ -118,7 +118,7 @@ export default function BookingPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+      <main className="booking-main" style={{ maxWidth: 600, margin: '0 auto' }}>
 
         {/* Divider label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
@@ -132,12 +132,7 @@ export default function BookingPage() {
         {/* PASO 1: Elige día */}
         <section style={{ marginBottom: 48 }}>
           <StepLabel number={1} label="Selecciona un día" />
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: 8,
-            marginTop: 20,
-          }}>
+          <div className="calendar-grid" style={{ marginTop: 20 }}>
             {days.map((d) => {
               const ymd = toYMD(d)
               const isSelected = ymd === selectedDate

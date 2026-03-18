@@ -1,20 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-
-function generateSlots(startTime: string, endTime: string, durationMin: number): string[] {
-  const slots: string[] = []
-  const [startH, startM] = startTime.split(':').map(Number)
-  const [endH, endM] = endTime.split(':').map(Number)
-  let current = startH * 60 + startM
-  const end = endH * 60 + endM
-  while (current + durationMin <= end) {
-    const h = Math.floor(current / 60).toString().padStart(2, '0')
-    const m = (current % 60).toString().padStart(2, '0')
-    slots.push(`${h}:${m}`)
-    current += durationMin
-  }
-  return slots
-}
+import { generateSlotsFromRanges, parseTimeRanges } from '@/lib/slots'
 
 // Returns { "YYYY-MM-DD": number } — count of available slots per day
 export async function GET(request: Request) {
@@ -63,7 +49,8 @@ export async function GET(request: Request) {
     const schedule = scheduleMap.get(d.getDay())
     if (!schedule) { result[ymd] = 0; continue }
 
-    const allSlots = generateSlots(schedule.startTime, schedule.endTime, 30)
+    const ranges = parseTimeRanges(schedule)
+    const allSlots = generateSlotsFromRanges(ranges, 30)
     const booked = bookedMap.get(ymd) || new Set()
 
     const available = allSlots.filter((slot) => {

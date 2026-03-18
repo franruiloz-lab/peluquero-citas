@@ -20,11 +20,12 @@ model Appointment {
 }
 
 model WeeklySchedule {
-  id        Int     @id @default(autoincrement())
-  dayOfWeek Int     @unique
-  startTime String
-  endTime   String
-  isActive  Boolean @default(false)
+  id         Int     @id @default(autoincrement())
+  dayOfWeek  Int     @unique
+  startTime  String  // legacy — kept para compatibilidad
+  endTime    String  // legacy — kept para compatibilidad
+  isActive   Boolean @default(false)
+  timeRanges String? // JSON: [{"start":"09:00","end":"13:00"},{"start":"16:00","end":"20:00"}]
 }
 
 model BlockedDate {

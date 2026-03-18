@@ -1,23 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-
-function generateSlots(startTime: string, endTime: string, durationMin: number): string[] {
-  const slots: string[] = []
-  const [startH, startM] = startTime.split(':').map(Number)
-  const [endH, endM] = endTime.split(':').map(Number)
-
-  let current = startH * 60 + startM
-  const end = endH * 60 + endM
-
-  while (current + durationMin <= end) {
-    const h = Math.floor(current / 60).toString().padStart(2, '0')
-    const m = (current % 60).toString().padStart(2, '0')
-    slots.push(`${h}:${m}`)
-    current += durationMin
-  }
-
-  return slots
-}
+import { generateSlotsFromRanges, parseTimeRanges } from '@/lib/slots'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -44,8 +27,9 @@ export async function GET(request: Request) {
     return NextResponse.json([])
   }
 
-  // Generate all slots
-  const allSlots = generateSlots(schedule.startTime, schedule.endTime, 30)
+  // Generate all slots from all time ranges
+  const ranges = parseTimeRanges(schedule)
+  const allSlots = generateSlotsFromRanges(ranges, 30)
 
   // Get booked slots for that date
   const booked = await prisma.appointment.findMany({
@@ -58,7 +42,6 @@ export async function GET(request: Request) {
   const now = new Date()
   const available = allSlots.filter((slot) => {
     if (bookedTimes.has(slot)) return false
-    // If today, filter past times
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     if (date === today) {
       const [slotH, slotM] = slot.split(':').map(Number)

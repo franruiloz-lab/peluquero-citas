@@ -37,3 +37,28 @@ body {
   background: var(--border);
   border-radius: 3px;
 }
+
+/* ── Mobile ── */
+.booking-header {
+  padding: 48px 24px 40px;
+}
+.booking-main {
+  padding: 40px 20px 80px;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .booking-header {
+    padding: 28px 16px 24px;
+  }
+  .booking-main {
+    padding: 24px 12px 60px;
+  }
+  .calendar-grid {
+    gap: 5px;
+  }
+}
