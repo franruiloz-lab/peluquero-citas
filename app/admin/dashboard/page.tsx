@@ -308,7 +308,7 @@ export function AdminNav({ active, onLogout }: { active: 'dashboard' | 'horario'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>💈</span>
-          <span style={{
+          <span className="admin-nav-title" style={{
             fontFamily: 'var(--font-playfair)',
             fontSize: 16,
             fontWeight: 700,

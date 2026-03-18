@@ -61,4 +61,7 @@ body {
   .calendar-grid {
     gap: 5px;
   }
+  .admin-nav-title {
+    display: none;
+  }
 }
