@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Appointment {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  date      String
+  time      String
+  status    String   @default("pending")
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model WeeklySchedule {
+  id        Int     @id @default(autoincrement())
+  dayOfWeek Int     @unique
+  startTime String
+  endTime   String
+  isActive  Boolean @default(false)
+}
+
+model BlockedDate {
+  id   Int    @id @default(autoincrement())
+  date String @unique
+  note String?
+}
