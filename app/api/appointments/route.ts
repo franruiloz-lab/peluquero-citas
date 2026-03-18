@@ -4,8 +4,14 @@ import { prisma } from '@/lib/db'
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('date')
+  const from = searchParams.get('from')
 
-  const where = date ? { date } : {}
+  let where = {}
+  if (date) {
+    where = { date }
+  } else if (from) {
+    where = { date: { gte: from } }
+  }
 
   const appointments = await prisma.appointment.findMany({
     where,
@@ -32,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   const appointment = await prisma.appointment.create({
-    data: { name, phone, date, time, notes: notes || null },
+    data: { name, phone, date, time, notes: notes || null, status: 'confirmed' },
   })
 
   return NextResponse.json(appointment, { status: 201 })

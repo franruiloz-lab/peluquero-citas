@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { AdminNav } from '../dashboard/page'
 
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
@@ -47,7 +47,6 @@ export default function HorarioPage() {
           setSchedule(merged)
         }
       })
-
     fetch('/api/blocked-dates')
       .then((r) => r.json())
       .then(setBlocked)
@@ -80,7 +79,9 @@ export default function HorarioPage() {
     })
     if (res.ok) {
       const data = await res.json()
-      setBlocked((prev) => [...prev.filter((b) => b.date !== data.date), data].sort((a, b) => a.date.localeCompare(b.date)))
+      setBlocked((prev) =>
+        [...prev.filter((b) => b.date !== data.date), data].sort((a, b) => a.date.localeCompare(b.date))
+      )
       setNewBlockDate('')
       setNewBlockNote('')
     }
@@ -97,88 +98,142 @@ export default function HorarioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Nav */}
-      <nav className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-lg font-bold text-white">
-            <span>✂️</span>
-            <span className="ml-1">Fran Peluquero</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/dashboard" className="text-gray-400 hover:text-white text-sm">
-              Citas
-            </Link>
-            <Link href="/admin/horario" className="text-emerald-400 text-sm font-medium">
-              Horario
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-red-400 text-sm transition-colors"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: 'var(--foreground)' }}>
+      <AdminNav active="horario" onLogout={handleLogout} />
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
 
-        {/* Weekly schedule */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Horario semanal</h2>
+        {/* Horario semanal */}
+        <section style={{ marginBottom: 48 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h1 style={{
+                fontFamily: 'var(--font-playfair)',
+                fontSize: 28,
+                fontWeight: 700,
+                margin: '0 0 4px',
+                color: 'var(--foreground)',
+              }}>
+                Horario semanal
+              </h1>
+              <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+                Activa los días y define las horas de trabajo
+              </p>
+            </div>
             <button
               onClick={saveSchedule}
               disabled={saving}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+              style={{
+                padding: '10px 22px',
+                background: saved
+                  ? 'rgba(40,180,100,0.1)'
+                  : saving
+                  ? 'var(--border)'
+                  : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                color: saved ? '#5dbe8a' : saving ? 'var(--muted)' : '#0a0a0a',
+                border: saved ? '1px solid rgba(40,180,100,0.3)' : 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                transition: 'opacity 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => { if (!saving) e.currentTarget.style.opacity = '0.88' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
             >
-              {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar cambios'}
+              {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
             </button>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl divide-y divide-gray-700">
-            {schedule.map((day) => (
-              <div key={day.dayOfWeek} className="px-5 py-4 flex items-center gap-4">
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}>
+            {schedule.map((day, i) => (
+              <div
+                key={day.dayOfWeek}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '16px 24px',
+                  borderBottom: i < schedule.length - 1 ? '1px solid var(--border)' : 'none',
+                  transition: 'background 0.15s',
+                  background: day.isActive ? 'rgba(196,148,58,0.03)' : 'transparent',
+                }}
+              >
                 {/* Toggle */}
                 <button
                   onClick={() => updateDay(day.dayOfWeek, 'isActive', !day.isActive)}
-                  className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${
-                    day.isActive ? 'bg-emerald-600' : 'bg-gray-600'
-                  }`}
+                  style={{
+                    width: 44,
+                    height: 24,
+                    borderRadius: 12,
+                    background: day.isActive ? 'var(--gold)' : 'var(--border)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    flexShrink: 0,
+                    transition: 'background 0.2s',
+                    padding: 0,
+                  }}
                 >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
-                      day.isActive ? 'left-[22px]' : 'left-0.5'
-                    }`}
-                  />
+                  <span style={{
+                    position: 'absolute',
+                    top: 3,
+                    left: day.isActive ? 22 : 3,
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    transition: 'left 0.2s',
+                  }} />
                 </button>
 
-                {/* Day name */}
-                <span
-                  className={`w-24 text-sm font-medium ${
-                    day.isActive ? 'text-white' : 'text-gray-500'
-                  }`}
-                >
+                {/* Day */}
+                <span style={{
+                  width: 90,
+                  fontSize: 14,
+                  fontWeight: day.isActive ? 600 : 400,
+                  color: day.isActive ? 'var(--foreground)' : 'var(--muted)',
+                  flexShrink: 0,
+                }}>
                   {DAYS[day.dayOfWeek]}
                 </span>
 
                 {/* Times */}
-                <div className={`flex items-center gap-2 flex-1 ${!day.isActive ? 'opacity-40' : ''}`}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  flex: 1,
+                  opacity: day.isActive ? 1 : 0.35,
+                  transition: 'opacity 0.2s',
+                }}>
                   <input
                     type="time"
                     value={day.startTime}
                     onChange={(e) => updateDay(day.dayOfWeek, 'startTime', e.target.value)}
                     disabled={!day.isActive}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed"
+                    style={timeInputStyle}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
                   />
-                  <span className="text-gray-500 text-sm">hasta</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12, letterSpacing: '0.05em' }}>—</span>
                   <input
                     type="time"
                     value={day.endTime}
                     onChange={(e) => updateDay(day.dayOfWeek, 'endTime', e.target.value)}
                     disabled={!day.isActive}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed"
+                    style={timeInputStyle}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
                   />
                 </div>
               </div>
@@ -186,51 +241,120 @@ export default function HorarioPage() {
           </div>
         </section>
 
-        {/* Blocked dates */}
+        {/* Días bloqueados */}
         <section>
-          <h2 className="text-lg font-bold mb-4">Días bloqueados</h2>
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-5 space-y-4">
-            {/* Add new blocked date */}
-            <div className="flex gap-2 flex-wrap">
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{
+              fontFamily: 'var(--font-playfair)',
+              fontSize: 22,
+              fontWeight: 700,
+              margin: '0 0 4px',
+              color: 'var(--foreground)',
+            }}>
+              Días bloqueados
+            </h2>
+            <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+              Festivos, vacaciones o cualquier día sin disponibilidad
+            </p>
+          </div>
+
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            padding: 24,
+          }}>
+            {/* Add form */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
               <input
                 type="date"
                 value={newBlockDate}
                 onChange={(e) => setNewBlockDate(e.target.value)}
-                className="bg-gray-700 border border-gray-600 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style={{
+                  ...timeInputStyle,
+                  padding: '10px 14px',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
               />
               <input
                 type="text"
                 value={newBlockNote}
                 onChange={(e) => setNewBlockNote(e.target.value)}
                 placeholder="Motivo (opcional)"
-                className="flex-1 min-w-32 bg-gray-700 border border-gray-600 rounded-xl px-4 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style={{
+                  ...timeInputStyle,
+                  flex: 1,
+                  minWidth: 140,
+                  padding: '10px 14px',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
               />
               <button
                 onClick={addBlockedDate}
                 disabled={!newBlockDate}
-                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                style={{
+                  padding: '10px 20px',
+                  background: newBlockDate ? 'linear-gradient(135deg, var(--gold), var(--gold-light))' : 'var(--border)',
+                  color: newBlockDate ? '#0a0a0a' : 'var(--muted)',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: newBlockDate ? 'pointer' : 'not-allowed',
+                  letterSpacing: '0.06em',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => { if (newBlockDate) e.currentTarget.style.opacity = '0.88' }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
               >
                 Añadir
               </button>
             </div>
 
+            {/* Divider */}
+            <div style={{ height: 1, background: 'var(--border)', marginBottom: 16 }} />
+
             {/* List */}
             {blocked.length === 0 ? (
-              <p className="text-gray-500 text-sm">No hay días bloqueados.</p>
+              <p style={{ color: 'var(--muted)', fontSize: 13 }}>No hay días bloqueados.</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {blocked.map((b) => (
                   <div
                     key={b.id}
-                    className="flex items-center justify-between bg-gray-700 rounded-xl px-4 py-2.5"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '11px 16px',
+                      background: '#0a0a0a',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                    }}
                   >
-                    <div>
-                      <span className="text-white text-sm font-medium">{b.date}</span>
-                      {b.note && <span className="text-gray-400 text-xs ml-2">— {b.note}</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>{b.date}</span>
+                      {b.note && (
+                        <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>— {b.note}</span>
+                      )}
                     </div>
                     <button
                       onClick={() => removeBlockedDate(b.date)}
-                      className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--muted)',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        transition: 'color 0.15s',
+                        letterSpacing: '0.05em',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#e07070' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)' }}
                     >
                       Quitar
                     </button>
@@ -243,4 +367,16 @@ export default function HorarioPage() {
       </main>
     </div>
   )
+}
+
+const timeInputStyle: React.CSSProperties = {
+  background: '#0a0a0a',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  padding: '8px 12px',
+  color: 'var(--foreground)',
+  fontSize: 13,
+  outline: 'none',
+  transition: 'border-color 0.15s',
+  cursor: 'pointer',
 }

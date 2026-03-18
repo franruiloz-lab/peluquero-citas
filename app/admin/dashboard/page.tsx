@@ -14,48 +14,68 @@ type Appointment = {
   notes: string | null
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendiente',
-  confirmed: 'Confirmada',
-  cancelled: 'Cancelada',
+type GroupedDay = {
+  date: string
+  label: string
+  isToday: boolean
+  isTomorrow: boolean
+  appointments: Appointment[]
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-emerald-100 text-emerald-800',
-  cancelled: 'bg-red-100 text-red-800',
-}
+
+const DAYS_LONG = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 function toYMD(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function formatDayLabel(ymd: string, isToday: boolean, isTomorrow: boolean): string {
+  const [year, month, day] = ymd.split('-').map(Number)
+  const d = new Date(year, month - 1, day)
+  const weekday = DAYS_LONG[d.getDay()]
+  const label = `${weekday}, ${day} ${MONTHS_SHORT[month - 1]} ${year}`
+  if (isToday) return `Hoy · ${label}`
+  if (isTomorrow) return `Mañana · ${label}`
+  return label
+}
+
+function groupByDay(appointments: Appointment[], today: string, tomorrow: string): GroupedDay[] {
+  const map = new Map<string, Appointment[]>()
+  for (const apt of appointments) {
+    if (!map.has(apt.date)) map.set(apt.date, [])
+    map.get(apt.date)!.push(apt)
+  }
+  return Array.from(map.entries()).map(([date, apts]) => ({
+    date,
+    label: formatDayLabel(date, date === today, date === tomorrow),
+    isToday: date === today,
+    isTomorrow: date === tomorrow,
+    appointments: apts,
+  }))
+}
+
 export default function DashboardPage() {
   const router = useRouter()
-  const [selectedDate, setSelectedDate] = useState(toYMD(new Date()))
+  const today = toYMD(new Date())
+  const tomorrow = toYMD(new Date(Date.now() + 86400000))
+
+  const [filterDate, setFilterDate] = useState('')
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/appointments?date=${selectedDate}`)
+    const url = filterDate
+      ? `/api/appointments?date=${filterDate}`
+      : `/api/appointments?from=${today}`
+    const res = await fetch(url)
     const data = await res.json()
     setAppointments(data)
     setLoading(false)
-  }, [selectedDate])
+  }, [filterDate, today])
 
-  useEffect(() => {
-    fetchAppointments()
-  }, [fetchAppointments])
-
-  async function updateStatus(id: number, status: string) {
-    await fetch(`/api/appointments/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    fetchAppointments()
-  }
+  useEffect(() => { fetchAppointments() }, [fetchAppointments])
 
   async function deleteAppointment(id: number) {
     if (!confirm('¿Eliminar esta cita?')) return
@@ -68,102 +88,173 @@ export default function DashboardPage() {
     router.push('/admin')
   }
 
-  const pending = appointments.filter((a) => a.status === 'pending').length
-  const confirmed = appointments.filter((a) => a.status === 'confirmed').length
+  const groups = groupByDay(appointments, today, tomorrow)
+  const total = appointments.length
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Nav */}
-      <nav className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-lg font-bold text-white">
-            <span>✂️</span>
-            <span className="ml-1">Fran Peluquero</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/dashboard" className="text-emerald-400 text-sm font-medium">
-              Citas
-            </Link>
-            <Link href="/admin/horario" className="text-gray-400 hover:text-white text-sm">
-              Horario
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-red-400 text-sm transition-colors"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: 'var(--foreground)' }}>
+      <AdminNav active="dashboard" onLogout={handleLogout} />
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        {/* Date picker + stats */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
           <div>
-            <h1 className="text-xl font-bold">Citas del día</h1>
-            <p className="text-gray-400 text-sm mt-0.5">
-              {pending} pendientes · {confirmed} confirmadas
+            <h1 style={{
+              fontFamily: 'var(--font-playfair)',
+              fontSize: 28,
+              fontWeight: 700,
+              margin: '0 0 6px',
+              color: 'var(--foreground)',
+            }}>
+              Próximas citas
+            </h1>
+            <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+              {filterDate
+                ? `Mostrando el día ${filterDate}`
+                : total === 0
+                ? 'No hay citas próximas'
+                : <><span style={{ color: 'var(--foreground)' }}>{total}</span> citas</>
+              }
             </p>
           </div>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+
+          {/* Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '9px 13px',
+                color: filterDate ? 'var(--foreground)' : 'var(--muted)',
+                fontSize: 13,
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+            />
+            {filterDate && (
+              <button
+                onClick={() => setFilterDate('')}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '9px 13px',
+                  color: 'var(--muted)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '0.04em',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--foreground)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)' }}
+              >
+                Ver todo
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Appointments list */}
+        <div style={{ height: 1, background: 'var(--border)', marginBottom: 32 }} />
+
+        {/* Content */}
         {loading ? (
-          <p className="text-gray-400 text-sm">Cargando...</p>
-        ) : appointments.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 text-center">
-            <p className="text-gray-400">No hay citas para este día.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 14 }}>Cargando...</p>
+        ) : groups.length === 0 ? (
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            padding: '56px 24px',
+            textAlign: 'center',
+            color: 'var(--muted)',
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
+            <p style={{ margin: 0, fontSize: 15 }}>No hay citas próximas.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {appointments.map((apt) => (
-              <div
-                key={apt.id}
-                className="bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl font-bold text-emerald-400">{apt.time}</span>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[apt.status]}`}
-                    >
-                      {STATUS_LABELS[apt.status]}
-                    </span>
-                  </div>
-                  <p className="text-white font-semibold mt-1">{apt.name}</p>
-                  <p className="text-gray-400 text-sm">{apt.phone}</p>
-                  {apt.notes && <p className="text-gray-500 text-xs mt-1 italic">{apt.notes}</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            {groups.map((group) => (
+              <div key={group.date}>
+                {/* Day header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: group.isToday ? 'var(--gold)' : group.isTomorrow ? 'var(--foreground)' : 'var(--muted)',
+                  }}>
+                    {group.label}
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  <span style={{
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 20,
+                    padding: '2px 10px',
+                  }}>
+                    {group.appointments.length} {group.appointments.length === 1 ? 'cita' : 'citas'}
+                  </span>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {apt.status !== 'confirmed' && (
-                    <button
-                      onClick={() => updateStatus(apt.id, 'confirmed')}
-                      className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
-                    >
-                      Confirmar
-                    </button>
-                  )}
-                  {apt.status !== 'cancelled' && (
-                    <button
-                      onClick={() => updateStatus(apt.id, 'cancelled')}
-                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded-lg font-medium transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteAppointment(apt.id)}
-                    className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1.5 rounded-lg font-medium transition-colors"
-                  >
-                    Eliminar
-                  </button>
+
+                {/* Appointments */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {group.appointments.map((apt) => (
+                    <div key={apt.id} style={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 18,
+                      flexWrap: 'wrap',
+                    }}>
+                      {/* Time block */}
+                      <div style={{
+                        minWidth: 58,
+                        textAlign: 'center',
+                        paddingRight: 18,
+                        borderRight: '1px solid var(--border)',
+                        flexShrink: 0,
+                      }}>
+                        <p style={{
+                          fontFamily: 'var(--font-playfair)',
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: 'var(--gold)',
+                          margin: 0,
+                          lineHeight: 1,
+                        }}>
+                          {apt.time}
+                        </p>
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 100 }}>
+                        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--foreground)', margin: '0 0 3px' }}>{apt.name}</p>
+                        <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>{apt.phone}</p>
+                        {apt.notes && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0', fontStyle: 'italic' }}>{apt.notes}</p>}
+                      </div>
+
+                      {/* Actions */}
+                      <ActionButton
+                        label="Eliminar"
+                        style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)' }}
+                        hoverBg="rgba(200,60,60,0.12)"
+                        onClick={() => deleteAppointment(apt.id)}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -171,5 +262,95 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+  )
+}
+
+function ActionButton({
+  label, style, hoverBg, onClick,
+}: {
+  label: string
+  style: React.CSSProperties
+  hoverBg: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '6px 12px',
+        borderRadius: 7,
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: '0.04em',
+        cursor: 'pointer',
+        transition: 'background 0.15s',
+        ...style,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = style.background as string }}
+    >
+      {label}
+    </button>
+  )
+}
+
+export function AdminNav({ active, onLogout }: { active: 'dashboard' | 'horario'; onLogout: () => void }) {
+  return (
+    <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      <div style={{
+        maxWidth: 720,
+        margin: '0 auto',
+        padding: '0 24px',
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 20 }}>💈</span>
+          <span style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: 16,
+            fontWeight: 700,
+            color: 'var(--foreground)',
+            letterSpacing: '0.01em',
+          }}>
+            Juan Antonio&apos;s Barber
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <NavLink href="/admin/dashboard" label="Citas" active={active === 'dashboard'} />
+          <NavLink href="/admin/horario" label="Horario" active={active === 'horario'} />
+          <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 4px' }} />
+          <button
+            onClick={onLogout}
+            style={{
+              background: 'none', border: 'none', padding: '6px 12px', borderRadius: 6,
+              fontSize: 13, color: 'var(--muted)', cursor: 'pointer', transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#e07070' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)' }}
+          >
+            Salir
+          </button>
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link href={href} style={{
+      padding: '6px 14px', borderRadius: 6, fontSize: 13,
+      fontWeight: active ? 600 : 400,
+      color: active ? 'var(--gold)' : 'var(--muted)',
+      textDecoration: 'none',
+      background: active ? 'rgba(196,148,58,0.08)' : 'none',
+      border: active ? '1px solid rgba(196,148,58,0.2)' : '1px solid transparent',
+      letterSpacing: '0.03em',
+    }}>
+      {label}
+    </Link>
   )
 }

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 
 const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MONTHS_ES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
 ]
 
 function toYMD(date: Date) {
@@ -36,8 +36,19 @@ export default function BookingPage() {
   const [phone, setPhone] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [availability, setAvailability] = useState<Record<string, number>>({})
 
   const days = getNext21Days()
+
+  // Load availability for all visible days on mount
+  useEffect(() => {
+    const from = toYMD(days[0])
+    const to = toYMD(days[days.length - 1])
+    fetch(`/api/availability?from=${from}&to=${to}`)
+      .then((r) => r.json())
+      .then(setAvailability)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!selectedDate) return
@@ -75,43 +86,119 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-xl mx-auto px-4 py-5 text-center">
-          <div className="text-4xl mb-1">✂️</div>
-          <h1 className="text-2xl font-bold text-gray-900">Fran Peluquero</h1>
-          <p className="text-gray-500 text-sm mt-1">Reserva tu cita de corte</p>
+    <div style={{ background: 'var(--background)', minHeight: '100vh', color: 'var(--foreground)' }}>
+
+      {/* Hero header */}
+      <header style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 40px', textAlign: 'center' }}>
+          <div style={{ fontSize: 52, marginBottom: 16, filter: 'drop-shadow(0 0 20px rgba(196,148,58,0.3))' }}>
+            💈
+          </div>
+          <h1 style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: 'clamp(28px, 6vw, 42px)',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            color: 'var(--foreground)',
+            margin: '0 0 8px',
+            lineHeight: 1.15,
+          }}>
+            Juan Antonio&apos;s Barber
+          </h1>
+          <p style={{
+            fontFamily: 'var(--font-playfair)',
+            fontStyle: 'italic',
+            fontSize: 15,
+            color: 'var(--gold)',
+            letterSpacing: '0.08em',
+            margin: 0,
+          }}>
+            El arte del corte perfecto
+          </p>
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-4 py-8 space-y-8">
+      <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+
+        {/* Divider label */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+            Reserva tu cita
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
 
         {/* PASO 1: Elige día */}
-        <section>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold mr-2">1</span>
-            Elige un día
-          </h2>
-          <div className="grid grid-cols-7 gap-1.5">
+        <section style={{ marginBottom: 48 }}>
+          <StepLabel number={1} label="Selecciona un día" />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 8,
+            marginTop: 20,
+          }}>
             {days.map((d) => {
               const ymd = toYMD(d)
               const isSelected = ymd === selectedDate
               const isToday = ymd === toYMD(new Date())
+              const slotsLeft = availability[ymd]
+              const hasLoaded = ymd in availability
+              const hasSlots = hasLoaded && slotsLeft > 0
+              const noSlots = hasLoaded && slotsLeft === 0
+
               return (
                 <button
                   key={ymd}
-                  onClick={() => setSelectedDate(ymd)}
-                  className={`flex flex-col items-center py-2.5 px-1 rounded-xl text-xs font-medium transition-all
-                    ${isSelected
-                      ? 'bg-emerald-600 text-white shadow-md scale-105'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
-                    }`}
+                  onClick={() => hasSlots || !hasLoaded ? setSelectedDate(ymd) : undefined}
+                  disabled={noSlots}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '10px 4px',
+                    borderRadius: 10,
+                    border: isSelected
+                      ? '1px solid var(--gold)'
+                      : hasSlots
+                      ? '1px solid rgba(196,148,58,0.35)'
+                      : '1px solid var(--border)',
+                    background: isSelected
+                      ? 'rgba(196,148,58,0.15)'
+                      : hasSlots
+                      ? 'rgba(196,148,58,0.06)'
+                      : 'var(--surface)',
+                    color: isSelected
+                      ? 'var(--gold-light)'
+                      : noSlots
+                      ? 'var(--muted)'
+                      : 'var(--foreground)',
+                    cursor: noSlots ? 'default' : 'pointer',
+                    opacity: noSlots ? 0.4 : 1,
+                    transition: 'all 0.15s ease',
+                    outline: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected && !noSlots) {
+                      e.currentTarget.style.borderColor = 'rgba(196,148,58,0.6)'
+                      e.currentTarget.style.background = 'rgba(196,148,58,0.1)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected && !noSlots) {
+                      e.currentTarget.style.borderColor = hasSlots ? 'rgba(196,148,58,0.35)' : 'var(--border)'
+                      e.currentTarget.style.background = hasSlots ? 'rgba(196,148,58,0.06)' : 'var(--surface)'
+                    }
+                  }}
                 >
-                  <span className="text-[10px] uppercase tracking-wide opacity-70">{DAYS_ES[d.getDay()]}</span>
-                  <span className="text-base font-bold mt-0.5">{d.getDate()}</span>
-                  <span className="text-[10px] opacity-60">{MONTHS_ES[d.getMonth()].slice(0, 3)}</span>
-                  {isToday && <span className="mt-0.5 w-1 h-1 rounded-full bg-current opacity-60" />}
+                  <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.6, marginBottom: 4 }}>
+                    {DAYS_ES[d.getDay()]}
+                  </span>
+                  <span style={{ fontSize: 17, fontWeight: 600, lineHeight: 1 }}>{d.getDate()}</span>
+                  <span style={{ fontSize: 9, opacity: 0.5, marginTop: 3 }}>{MONTHS_ES[d.getMonth()]}</span>
+                  {isToday && (
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--gold)', marginTop: 4 }} />
+                  )}
                 </button>
               )
             })}
@@ -120,28 +207,54 @@ export default function BookingPage() {
 
         {/* PASO 2: Elige hora */}
         {selectedDate && (
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold mr-2">2</span>
-              Elige una hora
-            </h2>
+          <section style={{ marginBottom: 48 }}>
+            <StepLabel number={2} label="Elige tu hora" />
             {loadingSlots ? (
-              <p className="text-gray-400 text-sm">Cargando horas disponibles...</p>
+              <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 20 }}>Cargando horarios disponibles...</p>
             ) : slots.length === 0 ? (
-              <p className="text-gray-500 text-sm bg-white border border-gray-200 rounded-xl p-4">
+              <div style={{
+                marginTop: 20,
+                padding: '24px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                textAlign: 'center',
+                color: 'var(--muted)',
+                fontSize: 14,
+              }}>
                 No hay horas disponibles para este día.
-              </p>
+              </div>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 20 }}>
                 {slots.map((slot) => (
                   <button
                     key={slot}
                     onClick={() => { setSelectedTime(slot); setStep(3) }}
-                    className={`py-3 rounded-xl text-sm font-semibold transition-all
-                      ${selectedTime === slot
-                        ? 'bg-emerald-600 text-white shadow-md scale-105'
-                        : 'bg-white border border-gray-200 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
-                      }`}
+                    style={{
+                      padding: '14px 8px',
+                      borderRadius: 10,
+                      border: selectedTime === slot ? '1px solid var(--gold)' : '1px solid var(--border)',
+                      background: selectedTime === slot ? 'rgba(196,148,58,0.12)' : 'var(--surface)',
+                      color: selectedTime === slot ? 'var(--gold-light)' : 'var(--foreground)',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      letterSpacing: '0.05em',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      outline: 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedTime !== slot) {
+                        e.currentTarget.style.borderColor = 'rgba(196,148,58,0.4)'
+                        e.currentTarget.style.background = 'rgba(196,148,58,0.05)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedTime !== slot) {
+                        e.currentTarget.style.borderColor = 'var(--border)'
+                        e.currentTarget.style.background = 'var(--surface)'
+                      }
+                    }}
                   >
                     {slot}
                   </button>
@@ -154,46 +267,149 @@ export default function BookingPage() {
         {/* PASO 3: Datos */}
         {step === 3 && selectedTime && (
           <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold mr-2">3</span>
-              Tus datos
-            </h2>
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-medium">
-                📅 {selectedDate} · {selectedTime} · Corte
+            <StepLabel number={3} label="Tus datos" />
+            <div style={{
+              marginTop: 20,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 16,
+              padding: 28,
+            }}>
+              {/* Summary */}
+              <div style={{
+                padding: '12px 16px',
+                background: 'rgba(196,148,58,0.08)',
+                border: '1px solid rgba(196,148,58,0.2)',
+                borderRadius: 10,
+                marginBottom: 24,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}>
+                <span style={{ fontSize: 18 }}>💈</span>
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--gold)', fontWeight: 600 }}>Corte</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{selectedDate} · {selectedTime}</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Tu nombre"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Tu nombre completo"
+                    style={inputStyle}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.outline = 'none' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="600 000 000"
+                    style={inputStyle}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.outline = 'none' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="600 000 000"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              {error && (
+                <p style={{ marginTop: 12, fontSize: 13, color: '#e05555' }}>{error}</p>
+              )}
+
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors"
+                style={{
+                  marginTop: 24,
+                  width: '100%',
+                  padding: '15px 24px',
+                  background: submitting ? 'var(--border)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                  color: '#0a0a0a',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  transition: 'opacity 0.15s',
+                }}
+                onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = '0.9' }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
               >
-                {submitting ? 'Reservando...' : 'Confirmar cita'}
+                {submitting ? 'Confirmando...' : 'Confirmar cita'}
               </button>
             </div>
           </section>
         )}
       </main>
+
+      {/* Footer */}
+      <footer style={{
+        borderTop: '1px solid var(--border)',
+        padding: '24px',
+        textAlign: 'center',
+        color: 'var(--muted)',
+        fontSize: 12,
+        letterSpacing: '0.05em',
+      }}>
+        © Juan Antonio&apos;s Barber
+      </footer>
+    </div>
+  )
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: '#0a0a0a',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  padding: '12px 16px',
+  color: 'var(--foreground)',
+  fontSize: 15,
+  transition: 'border-color 0.15s',
+}
+
+function StepLabel({ number, label }: { number: number; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 28,
+        height: 28,
+        borderRadius: '50%',
+        background: 'rgba(196,148,58,0.15)',
+        border: '1px solid var(--gold)',
+        color: 'var(--gold)',
+        fontSize: 13,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}>
+        {number}
+      </span>
+      <span style={{
+        fontFamily: 'var(--font-playfair)',
+        fontSize: 20,
+        fontWeight: 600,
+        letterSpacing: '0.01em',
+        color: 'var(--foreground)',
+      }}>
+        {label}
+      </span>
     </div>
   )
 }

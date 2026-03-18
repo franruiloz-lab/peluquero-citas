@@ -27,34 +27,115 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      <div className="bg-gray-800 rounded-2xl p-8 w-full max-w-sm border border-gray-700">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-3">✂️</div>
-          <h1 className="text-xl font-bold text-white">Panel de administración</h1>
-          <p className="text-gray-400 text-sm mt-1">Fran Peluquero</p>
-        </div>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••"
-              autoFocus
-              className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--background)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{ width: '100%', maxWidth: 360 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{
+            fontSize: 48,
+            marginBottom: 16,
+            filter: 'drop-shadow(0 0 20px rgba(196,148,58,0.3))',
+          }}>
+            💈
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition-colors"
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
+          <h1 style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: 26,
+            fontWeight: 700,
+            color: 'var(--foreground)',
+            margin: '0 0 6px',
+            letterSpacing: '0.02em',
+          }}>
+            Juan Antonio&apos;s Barber
+          </h1>
+          <p style={{
+            fontFamily: 'var(--font-playfair)',
+            fontStyle: 'italic',
+            fontSize: 13,
+            color: 'var(--gold)',
+            letterSpacing: '0.08em',
+            margin: 0,
+          }}>
+            Panel de administración
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 16,
+          padding: 32,
+        }}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 11,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+                marginBottom: 8,
+              }}>
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoFocus
+                style={{
+                  width: '100%',
+                  background: '#0a0a0a',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '12px 16px',
+                  color: 'var(--foreground)',
+                  fontSize: 15,
+                  outline: 'none',
+                  transition: 'border-color 0.15s',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+              />
+            </div>
+
+            {error && (
+              <p style={{ fontSize: 13, color: '#e05555', margin: 0 }}>{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '13px 24px',
+                background: loading ? 'var(--border)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                color: '#0a0a0a',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.opacity = '0.88' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
