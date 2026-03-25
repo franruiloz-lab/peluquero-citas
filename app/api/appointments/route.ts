@@ -5,9 +5,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('date')
   const from = searchParams.get('from')
+  const phone = searchParams.get('phone')
 
-  let where = {}
-  if (date) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let where: any = {}
+  if (phone) {
+    const today = new Date()
+    const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    where = { phone, date: { gte: ymd }, status: { not: 'cancelled' } }
+  } else if (date) {
     where = { date }
   } else if (from) {
     where = { date: { gte: from } }

@@ -351,6 +351,9 @@ export default function BookingPage() {
         )}
       </main>
 
+      {/* Consulta tu cita */}
+      <ConsultaCita />
+
       {/* Footer */}
       <footer style={{
         borderTop: '1px solid var(--border)',
@@ -362,6 +365,114 @@ export default function BookingPage() {
       }}>
         © Juan Antonio&apos;s Barber
       </footer>
+    </div>
+  )
+}
+
+function ConsultaCita() {
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState<{ name: string; date: string; time: string }[] | null>(null)
+
+  async function handleSearch() {
+    if (!phone.trim()) return
+    setLoading(true)
+    setResults(null)
+    const res = await fetch(`/api/appointments?phone=${encodeURIComponent(phone.trim())}`)
+    const data = await res.json()
+    setResults(data)
+    setLoading(false)
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+            Consulta tu cita
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
+        <p style={{ fontSize: 14, color: 'var(--muted)', textAlign: 'center', marginBottom: 24, marginTop: 0 }}>
+          ¿No recuerdas a qué hora es tu cita? Introduce tu teléfono y lo comprobamos.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="600 000 000"
+            style={{ ...inputStyle, flex: 1 }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.outline = 'none' }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            style={{
+              padding: '12px 20px',
+              background: loading ? 'var(--border)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+              color: '#0a0a0a',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {loading ? '...' : 'Buscar'}
+          </button>
+        </div>
+
+        {results !== null && (
+          <div style={{ marginTop: 24 }}>
+            {results.length === 0 ? (
+              <div style={{
+                padding: '20px 24px',
+                background: 'rgba(196,148,58,0.05)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                textAlign: 'center',
+                color: 'var(--muted)',
+                fontSize: 14,
+              }}>
+                No tienes citas próximas con ese teléfono.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {results.map((appt, i) => (
+                  <div key={i} style={{
+                    padding: '16px 20px',
+                    background: 'rgba(196,148,58,0.08)',
+                    border: '1px solid rgba(196,148,58,0.3)',
+                    borderRadius: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                  }}>
+                    <span style={{ fontSize: 24 }}>💈</span>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--foreground)' }}>
+                        {appt.name}
+                      </p>
+                      <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--gold)' }}>
+                        {appt.date} · {appt.time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
