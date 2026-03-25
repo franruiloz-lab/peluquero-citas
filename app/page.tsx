@@ -386,8 +386,8 @@ function ConsultaCita() {
 
   return (
     <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '28px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           <span style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--muted)', textTransform: 'uppercase' }}>
             Consulta tu cita

@@ -43,7 +43,7 @@ body {
   padding: 48px 24px 40px;
 }
 .booking-main {
-  padding: 40px 20px 80px;
+  padding: 40px 20px 40px;
 }
 .calendar-grid {
   display: grid;
@@ -56,7 +56,7 @@ body {
     padding: 28px 16px 24px;
   }
   .booking-main {
-    padding: 24px 12px 60px;
+    padding: 24px 12px 32px;
   }
   .calendar-grid {
     gap: 5px;
